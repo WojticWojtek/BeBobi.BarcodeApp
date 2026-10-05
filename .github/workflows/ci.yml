@@ -26,3 +26,6 @@ jobs:
 
       - name: Test
         run: dotnet test BarcodeApp.sln --no-build -c Release --verbosity normal
+
+      - name: UI smoke tests (headless)
+        run: dotnet test BarcodeApp.SmokeTests/BarcodeApp.SmokeTests.csproj -c Release --verbosity normal

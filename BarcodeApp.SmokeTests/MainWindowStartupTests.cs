@@ -6,9 +6,9 @@ using Qivisoft.BarcodeApp.Services;
 using Qivisoft.BarcodeApp.ViewModels;
 using Qivisoft.BarcodeApp.Views;
 
-[assembly: AvaloniaTestApplication(typeof(Qivisoft.BarcodeApp.Tests.HeadlessTestApp))]
+[assembly: AvaloniaTestApplication(typeof(Qivisoft.BarcodeApp.SmokeTests.HeadlessTestApp))]
 
-namespace Qivisoft.BarcodeApp.Tests;
+namespace Qivisoft.BarcodeApp.SmokeTests;
 
 public static class HeadlessTestApp
 {
