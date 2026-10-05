@@ -10,6 +10,7 @@ namespace Qivisoft.BarcodeApp.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly ImportService _importService = new();
+    private static readonly ITextRasterizer TextRasterizer = new SkiaTextRasterizer();
     private readonly IAppSettingsStore _settingsStore;
     private readonly IZebraPrinterService _zebraPrinterService;
     private readonly ISystemQueuePrinterService _systemQueuePrinterService;
@@ -802,7 +803,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             Layout = SelectedLabelLayout,
             PrinterDpi = PrinterDpi,
             IncludePrice = IncludePrice,
-            Currency = SelectedPriceCurrency
+            Currency = SelectedPriceCurrency,
+            TextRasterizer = TextRasterizer
         });
 
         validProductsCount = validData.Count;

@@ -91,14 +91,14 @@ public static class ZplBuilder
                 ? row.Name.Replace("\\&", " ", StringComparison.Ordinal)
                 : row.NamePl;
 
-            AppendTextLine(builder, EscapeField(namePl), ref y, Scaled(30), margin, textWidth, Scaled(6));
-            AppendTextLine(builder, EscapeField(row.NameEn), ref y, Scaled(26), margin, textWidth, Scaled(4));
+            AppendTextLine(builder, EscapeField(namePl), ref y, Scaled(30), margin, textWidth, Scaled(6), options.TextRasterizer);
+            AppendTextLine(builder, EscapeField(row.NameEn), ref y, Scaled(26), margin, textWidth, Scaled(4), options.TextRasterizer);
         }
 
-        AppendTextLine(builder, EscapeField(row.Sku), ref y, Scaled(34), margin, textWidth, Scaled(6));
+        AppendTextLine(builder, EscapeField(row.Sku), ref y, Scaled(34), margin, textWidth, Scaled(6), options.TextRasterizer);
 
         if (options.IncludePrice)
-            AppendTextLine(builder, EscapeField(PriceFormatter.Format(row.Price, options.Currency)), ref y, Scaled(30), margin, textWidth, Scaled(6));
+            AppendTextLine(builder, EscapeField(PriceFormatter.Format(row.Price, options.Currency)), ref y, Scaled(30), margin, textWidth, Scaled(6), options.TextRasterizer);
 
         // Never go below ~0.33 mm per bar (EAN nominal size) so retail/warehouse scanners read it reliably.
         var minimumModule = Math.Max(1, (int)Math.Round(0.33 * dpi / 25.4));
@@ -129,15 +129,96 @@ public static class ZplBuilder
         int fontHeight,
         int x,
         int textWidth,
-        int gapAfter)
+        int gapAfter,
+        ITextRasterizer? rasterizer = null)
     {
         if (string.IsNullOrWhiteSpace(text))
             return;
+
+        if (rasterizer is not null && NeedsGraphic(text))
+        {
+            AppendGraphicLine(builder, text, ref y, fontHeight, x, textWidth, gapAfter, rasterizer);
+            return;
+        }
 
         var (height, width, lines) = FitText(text, fontHeight, textWidth);
         // Trailing \& keeps ^FB centering reliable on the last line (same convention as the classic layout).
         builder.AppendLine($"^FO{x},{y}^A0N,{height},{width}^FB{textWidth},{lines + 1},0,C^FD{text}\\&^FS");
         y += lines * height + gapAfter;
+    }
+
+    /// <summary>
+    /// The printer's built-in font 0 lacks many non-ASCII glyphs (e.g. Polish Ą, Ż),
+    /// so any line containing such characters is printed as a bitmap instead.
+    /// </summary>
+    public static bool NeedsGraphic(string text) => text.Any(ch => ch > '~');
+
+    private static void AppendGraphicLine(
+        StringBuilder builder,
+        string text,
+        ref int y,
+        int fontHeight,
+        int x,
+        int textWidth,
+        int gapAfter,
+        ITextRasterizer rasterizer)
+    {
+        var baseScale = rasterizer.BaseScaleX;
+        var minScale = baseScale * 0.75f;
+        var height = fontHeight;
+        var scale = baseScale;
+        string[] lines = [text];
+
+        var measured = rasterizer.Measure(text, height, baseScale);
+        if (measured > textWidth)
+        {
+            // 1) condense, 2) shrink to 80 %, 3) wrap onto two lines - same strategy as printer-font lines.
+            scale = baseScale * textWidth / measured;
+            if (scale < minScale)
+            {
+                scale = minScale;
+                var minimumHeight = (int)Math.Round(fontHeight * 0.8);
+                var widthAtMinScale = rasterizer.Measure(text, fontHeight, minScale);
+                var shrunk = (int)Math.Floor(fontHeight * textWidth / widthAtMinScale);
+                if (shrunk >= minimumHeight)
+                {
+                    height = shrunk;
+                }
+                else
+                {
+                    height = minimumHeight;
+                    lines = SplitInTwo(text);
+                    var widest = lines.Max(line => rasterizer.Measure(line, height, baseScale));
+                    scale = Math.Max(minScale * 0.85f, Math.Min(baseScale, baseScale * textWidth / widest));
+                }
+            }
+        }
+
+        var bitmap = rasterizer.Render(lines, textWidth, height, scale, out var capTopOffset);
+        var top = Math.Max(0, y - capTopOffset);
+        builder.AppendLine($"^FO{x},{top}{ToGraphicField(bitmap)}^FS");
+        y += lines.Length * height + gapAfter;
+    }
+
+    private static string[] SplitInTwo(string text)
+    {
+        var middle = text.Length / 2;
+        var best = -1;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] != ' ') continue;
+            if (best < 0 || Math.Abs(i - middle) < Math.Abs(best - middle))
+                best = i;
+        }
+
+        return best < 0 ? [text] : [text[..best].Trim(), text[(best + 1)..].Trim()];
+    }
+
+    /// <summary>ZPL ^GFA (ASCII hex) graphic field for a monochrome bitmap.</summary>
+    public static string ToGraphicField(MonoBitmap bitmap)
+    {
+        var total = bitmap.BytesPerRow * bitmap.Height;
+        return $"^GFA,{total},{total},{bitmap.BytesPerRow},{Convert.ToHexString(bitmap.Data)}";
     }
 
     /// <summary>

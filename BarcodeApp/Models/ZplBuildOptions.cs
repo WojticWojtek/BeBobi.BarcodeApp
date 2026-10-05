@@ -28,4 +28,10 @@ public sealed class ZplBuildOptions
     public bool IncludePrice { get; init; } = false;
 
     public PriceCurrency Currency { get; init; } = PriceCurrency.Pln;
+
+    /// <summary>
+    /// When set (multilingual layout), lines with characters outside plain ASCII
+    /// (Polish diacritics, €) are rendered as graphics so they print on any Zebra font.
+    /// </summary>
+    public Services.ITextRasterizer? TextRasterizer { get; init; }
 }

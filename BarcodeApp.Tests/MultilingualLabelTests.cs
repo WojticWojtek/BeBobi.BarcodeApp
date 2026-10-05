@@ -250,3 +250,100 @@ public sealed class PriceLineTests
         Assert.True(bottom <= 320, $"Barcode bottom at {bottom} dots exceeds the 40 mm label.");
     }
 }
+
+public sealed class PolishCharactersTests
+{
+    private sealed class FakeRasterizer : ITextRasterizer
+    {
+        public List<string> Rendered { get; } = [];
+
+        public float BaseScaleX => 1f;
+
+        public float Measure(string text, int fontHeight, float scaleX) => text.Length * fontHeight * 0.5f * scaleX;
+
+        public MonoBitmap Render(IReadOnlyList<string> lines, int width, int fontHeight, float scaleX, out int capTopOffset)
+        {
+            Rendered.AddRange(lines);
+            capTopOffset = 3;
+            var bytesPerRow = (width + 7) / 8;
+            return new MonoBitmap(width, fontHeight, bytesPerRow, new byte[bytesPerRow * fontHeight]);
+        }
+    }
+
+    private static ValidProductData Collar() => new()
+    {
+        Ean = "5907053181876",
+        Name = "OBROŻA S skóra zaplatana brąz",
+        NamePl = "OBROŻA S skóra zaplatana brąz",
+        NameEn = "Braided leather collar S brown",
+        Sku = "OZPASSBR",
+        Quantity = 1
+    };
+
+    [Fact]
+    public void Build_RendersOnlyLinesWithPolishCharacters_AsGraphics()
+    {
+        var rasterizer = new FakeRasterizer();
+        var zpl = ZplBuilder.Build([Collar()], new ZplBuildOptions
+        {
+            Layout = LabelLayout.Multilingual,
+            LabelWidthDots = 480,
+            LabelHeightDots = 320,
+            TextRasterizer = rasterizer
+        });
+
+        Assert.Equal(["OBROŻA S skóra zaplatana brąz"], rasterizer.Rendered);
+        Assert.Contains("^GFA,", zpl);
+        Assert.DoesNotContain("^FDOBROŻA", zpl);
+        // ASCII lines stay in the printer font.
+        Assert.Contains("^FDBraided leather collar S brown\\&^FS", zpl);
+        Assert.Contains("^FDOZPASSBR\\&^FS", zpl);
+    }
+
+    [Fact]
+    public void Build_WithoutRasterizer_KeepsTextFields()
+    {
+        var zpl = ZplBuilder.Build([Collar()], new ZplBuildOptions
+        {
+            Layout = LabelLayout.Multilingual,
+            LabelWidthDots = 480,
+            LabelHeightDots = 320
+        });
+
+        Assert.DoesNotContain("^GFA", zpl);
+    }
+
+    [Theory]
+    [InlineData("OZPASSBR", false)]
+    [InlineData("Braided leather collar S brown", false)]
+    [InlineData("OBROŻA", true)]
+    [InlineData("BRĄZ", true)]
+    [InlineData("59,90 zł", true)]
+    [InlineData("59,90 €", true)]
+    public void NeedsGraphic_DetectsNonAsciiCharacters(string text, bool expected)
+    {
+        Assert.Equal(expected, ZplBuilder.NeedsGraphic(text));
+    }
+
+    [Fact]
+    public void ToGraphicField_UsesZplGfaFormat()
+    {
+        var bitmap = new MonoBitmap(16, 2, 2, [0xFF, 0x00, 0x0F, 0xF0]);
+
+        Assert.Equal("^GFA,4,4,2,FF000FF0", ZplBuilder.ToGraphicField(bitmap));
+    }
+
+    [Fact]
+    public void SkiaRasterizer_DrawsPolishText()
+    {
+        var rasterizer = new SkiaTextRasterizer();
+
+        var bitmap = rasterizer.Render(["OBROŻA BRĄZ"], 456, 30, rasterizer.BaseScaleX, out var capTop);
+
+        Assert.Equal(57, bitmap.BytesPerRow);
+        Assert.True(bitmap.Height >= 30);
+        Assert.True(capTop >= 0);
+        Assert.Contains(bitmap.Data, b => b != 0);
+        Assert.True(rasterizer.Measure("OBROŻA BRĄZ", 30, rasterizer.BaseScaleX) > 0);
+    }
+}
