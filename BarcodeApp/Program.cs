@@ -10,8 +10,42 @@ internal sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrashLog(e.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, e) => WriteCrashLog(e.Exception);
+
+        try
+        {
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            WriteCrashLog(ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Writes startup/runtime crashes to %LOCALAPPDATA%\BarcodeApp\crash.log so problems
+    /// can be diagnosed on machines without developer tools.
+    /// </summary>
+    private static void WriteCrashLog(Exception? exception)
+    {
+        if (exception is null)
+            return;
+
+        try
+        {
+            var directory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BarcodeApp");
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(Path.Combine(directory, "crash.log"),
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {exception}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Logging must never crash the app.
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
