@@ -76,6 +76,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 return;
 
             OnPropertyChanged(nameof(SelectedLabelLayoutIndex));
+            OnPropertyChanged(nameof(IsMultilingualLayout));
             OnPropertyChanged(nameof(LabelLayoutHint));
             SaveSettings();
         }
@@ -92,9 +93,48 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Price/currency options are shown only for the multilingual layout.</summary>
+    public bool IsMultilingualLayout => SelectedLabelLayout == LabelLayout.Multilingual;
+
+    public IReadOnlyList<string> PriceCurrencyOptions { get; } = ["PLN (zł)", "EUR (€)"];
+
+    public bool IncludePrice
+    {
+        get;
+        set
+        {
+            if (SetProperty(ref field, value))
+                SaveSettings();
+        }
+    }
+
+    public PriceCurrency SelectedPriceCurrency
+    {
+        get;
+        set
+        {
+            if (!SetProperty(ref field, value))
+                return;
+
+            OnPropertyChanged(nameof(SelectedPriceCurrencyIndex));
+            SaveSettings();
+        }
+    } = PriceCurrency.Pln;
+
+    /// <summary>Index-based binding for the currency ComboBox (0 = PLN, 1 = EUR).</summary>
+    public int SelectedPriceCurrencyIndex
+    {
+        get => (int)SelectedPriceCurrency;
+        set
+        {
+            if (value is >= 0 and <= 1)
+                SelectedPriceCurrency = (PriceCurrency)value;
+        }
+    }
+
     public string LabelLayoutHint =>
         SelectedLabelLayout == LabelLayout.Multilingual
-            ? "Nazwa PL i EN (kolumna \"Nazwa EN\"), pogrubione SKU i mniejszy kod. Ustaw wys. etykiety, np. 320 dots = 40 mm."
+            ? "Nazwa PL i EN (kolumna \"Nazwa EN\"), pogrubione SKU, opcjonalnie cena i mniejszy kod. Ustaw wys. etykiety, np. 320 dots = 40 mm."
             : "Do 2 linii opisu (nazwa, SKU, cena) nad dużym kodem kreskowym.";
 
     public ProductRowViewModel? SelectedRow
@@ -512,6 +552,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             IncludeProductName = settings.IncludeProductName;
             SelectedLabelLayout = Enum.IsDefined(settings.LabelLayout) ? settings.LabelLayout : LabelLayout.Classic;
+            IncludePrice = settings.IncludePrice;
+            SelectedPriceCurrency = Enum.IsDefined(settings.PriceCurrency) ? settings.PriceCurrency : PriceCurrency.Pln;
             SelectedBarcodeType = settings.SelectedBarcodeType;
 
             _printerProfiles.Clear();
@@ -566,6 +608,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             IncludeProductName = IncludeProductName ?? true,
             LabelLayout = SelectedLabelLayout,
+            IncludePrice = IncludePrice,
+            PriceCurrency = SelectedPriceCurrency,
             SelectedBarcodeType = SelectedBarcodeType,
             ActivePrinterProfileName = SelectedPrinterProfileName,
             PrinterProfiles = _printerProfiles.Select(CloneProfile).ToList(),
@@ -756,7 +800,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             BarcodeHeightDots = options.BarcodeHeightDots,
             LabelHeightDots = options.LabelHeightDots,
             Layout = SelectedLabelLayout,
-            PrinterDpi = PrinterDpi
+            PrinterDpi = PrinterDpi,
+            IncludePrice = IncludePrice,
+            Currency = SelectedPriceCurrency
         });
 
         validProductsCount = validData.Count;

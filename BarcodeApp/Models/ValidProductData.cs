@@ -14,4 +14,7 @@ public sealed class ValidProductData
     public string NameEn { get; init; } = string.Empty;
 
     public string Sku { get; init; } = string.Empty;
+
+    /// <summary>Raw price as typed/imported (used by the multilingual layout).</summary>
+    public string Price { get; init; } = string.Empty;
 }

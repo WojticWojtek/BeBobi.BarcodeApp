@@ -25,6 +25,8 @@
                                 <TextBlock IsVisible="{Binding IncludeProductName}" Text="{Binding DescriptionLine2}" Classes="preview-description-secondary" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
                                 <TextBlock IsVisible="{Binding SkuLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                            Text="{Binding SkuLine}" Classes="preview-description-main" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                <TextBlock IsVisible="{Binding PriceLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           Text="{Binding PriceLine}" Classes="preview-description-main" FontWeight="Bold" HorizontalAlignment="Center" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">

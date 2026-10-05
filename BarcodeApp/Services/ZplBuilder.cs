@@ -59,7 +59,7 @@ public static class ZplBuilder
 
     /// <summary>
     /// Builds one label in the multilingual layout:
-    /// PL name, EN name, bold SKU and a compact barcode below.
+    /// PL name, EN name, bold SKU, optional price line and a compact barcode below.
     /// Empty lines are skipped. Long names are condensed (narrower glyphs),
     /// then shrunk, and only as a last resort wrapped onto two lines.
     /// Dimensions are designed for 203 dpi and scaled for other resolutions.
@@ -96,6 +96,9 @@ public static class ZplBuilder
         }
 
         AppendTextLine(builder, EscapeField(row.Sku), ref y, Scaled(34), margin, textWidth, Scaled(6));
+
+        if (options.IncludePrice)
+            AppendTextLine(builder, EscapeField(PriceFormatter.Format(row.Price, options.Currency)), ref y, Scaled(30), margin, textWidth, Scaled(6));
 
         // Never go below ~0.33 mm per bar (EAN nominal size) so retail/warehouse scanners read it reliably.
         var minimumModule = Math.Max(1, (int)Math.Round(0.33 * dpi / 25.4));

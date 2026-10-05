@@ -6,6 +6,10 @@ public sealed class AppUserSettings
 
     public LabelLayout LabelLayout { get; set; } = LabelLayout.Classic;
 
+    public bool IncludePrice { get; set; } = false;
+
+    public PriceCurrency PriceCurrency { get; set; } = PriceCurrency.Pln;
+
     public BarcodeSymbology SelectedBarcodeType { get; set; } = BarcodeSymbology.Ean13;
 
     public string ActivePrinterProfileName { get; set; } = "Domyslny";

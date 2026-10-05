@@ -116,6 +116,19 @@
                                Text="{Binding LabelLayoutHint}" Opacity="0.65" TextWrapping="Wrap" />
                 </Grid>
 
+                <Grid ColumnDefinitions="Auto,Auto,160,*" ColumnSpacing="10"
+                      IsVisible="{Binding IsMultilingualLayout}">
+                    <CheckBox Content="Drukuj cenę" IsChecked="{Binding IncludePrice, Mode=TwoWay}"
+                              VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="Waluta:" Classes="section-label" Margin="10,0,0,0" />
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding PriceCurrencyOptions}"
+                              SelectedIndex="{Binding SelectedPriceCurrencyIndex, Mode=TwoWay}"
+                              IsEnabled="{Binding IncludePrice}" />
+                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.65" TextWrapping="Wrap"
+                               Text="Cena z kolumny &quot;Cena&quot; drukuje się jako osobny wiersz pod SKU, np. 49,90 zł / 49,90 €." />
+                </Grid>
+
                 <Grid ColumnDefinitions="Auto,220,Auto,Auto,Auto,*" ColumnSpacing="8">
                     <TextBlock VerticalAlignment="Center" Text="Profil drukarki:" Classes="section-label" />
                     <ComboBox Grid.Column="1"

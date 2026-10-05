@@ -1,4 +1,5 @@
 using Qivisoft.BarcodeApp.Models;
+using Qivisoft.BarcodeApp.Services;
 
 namespace Qivisoft.BarcodeApp.ViewModels;
 
@@ -8,7 +9,9 @@ public sealed class StickerPreviewViewModel : ViewModelBase
         ProductRowViewModel row,
         bool includeProductName,
         BarcodeSymbology barcodeType,
-        LabelLayout layout = LabelLayout.Classic)
+        LabelLayout layout = LabelLayout.Classic,
+        bool includePrice = false,
+        PriceCurrency currency = PriceCurrency.Pln)
     {
         ArgumentNullException.ThrowIfNull(row);
 
@@ -21,6 +24,7 @@ public sealed class StickerPreviewViewModel : ViewModelBase
             DescriptionLine1 = includeProductName ? row.Name.Trim() : string.Empty;
             DescriptionLine2 = includeProductName ? row.NameEn.Trim() : string.Empty;
             SkuLine = row.Sku.Trim();
+            PriceLine = includePrice ? PriceFormatter.Format(row.Price, currency) : string.Empty;
         }
         else
         {
@@ -46,6 +50,9 @@ public sealed class StickerPreviewViewModel : ViewModelBase
 
     /// <summary>Bold SKU line (multilingual layout only).</summary>
     public string SkuLine { get; } = string.Empty;
+
+    /// <summary>Formatted price line (multilingual layout only).</summary>
+    public string PriceLine { get; } = string.Empty;
 
     public string BarcodeBars { get; }
 

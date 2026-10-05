@@ -151,7 +151,8 @@ public sealed class ProductRowViewModel : ViewModelBase
             Quantity = int.Parse(QuantityText.Trim()),
             NamePl = Name.Trim(),
             NameEn = NameEn.Trim(),
-            Sku = Sku.Trim()
+            Sku = Sku.Trim(),
+            Price = Price.Trim()
         };
 
         return true;

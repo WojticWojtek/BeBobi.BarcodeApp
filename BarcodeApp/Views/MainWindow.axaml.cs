@@ -84,7 +84,9 @@ public partial class MainWindow : Window
         var dialog = new StickerPreviewWindow
         {
             DataContext = new StickerPreviewViewModel(row, includeName, barcodeType,
-                ViewModel?.SelectedLabelLayout ?? Models.LabelLayout.Classic)
+                ViewModel?.SelectedLabelLayout ?? Models.LabelLayout.Classic,
+                ViewModel?.IncludePrice ?? false,
+                ViewModel?.SelectedPriceCurrency ?? Models.PriceCurrency.Pln)
         };
 
         await dialog.ShowDialog(this);
@@ -130,6 +132,7 @@ public partial class MainWindow : Window
                 "- Przełącznik nazwy produktu decyduje, czy nazwa pojawi się na etykiecie.\n" +
                 "- Układ \"Dwujęzyczny\" (Ustawienia etykiety) drukuje nazwę PL, EN, SKU i mniejszy kod. " +
                 "Dodaj w pliku kolumnę \"Nazwa EN\" (pusta jest pomijana).\n" +
+                "- Cena: zaznacz \"Drukuj cenę\" i wybierz walutę (PLN / €) w ustawieniach. Cena jest brana z kolumny \"Cena\".\n" +
                 "- Etykieta 60 x 40 mm: kliknij \"Preset 60 x 40 mm\" w ustawieniach.",
             TextWrapping = TextWrapping.Wrap
         };

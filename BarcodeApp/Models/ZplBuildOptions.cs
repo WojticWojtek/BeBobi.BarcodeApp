@@ -23,4 +23,9 @@ public sealed class ZplBuildOptions
 
     /// <summary>Printer resolution, used to scale the multilingual layout.</summary>
     public int PrinterDpi { get; init; } = 203;
+
+    /// <summary>Prints the price as its own line (multilingual layout only).</summary>
+    public bool IncludePrice { get; init; } = false;
+
+    public PriceCurrency Currency { get; init; } = PriceCurrency.Pln;
 }

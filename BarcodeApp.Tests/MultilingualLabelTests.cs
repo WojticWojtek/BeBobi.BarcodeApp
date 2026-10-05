@@ -188,3 +188,65 @@ public sealed class MultilingualLabelTests
         Assert.Equal("OZPASSBR", vm.SkuLine);
     }
 }
+
+public sealed class PriceLineTests
+{
+    private static ValidProductData Collar(string price) => new()
+    {
+        Ean = "5907053181876",
+        Name = "OBROŻA S skóra zaplatana brąz",
+        NamePl = "OBROŻA S skóra zaplatana brąz",
+        NameEn = "Braided leather collar S brown",
+        Sku = "OZPASSBR",
+        Price = price,
+        Quantity = 1
+    };
+
+    private static ZplBuildOptions Options(bool includePrice, PriceCurrency currency = PriceCurrency.Pln) => new()
+    {
+        Layout = LabelLayout.Multilingual,
+        LabelWidthDots = 480,
+        LabelHeightDots = 320,
+        IncludePrice = includePrice,
+        Currency = currency
+    };
+
+    [Theory]
+    [InlineData("49.9", PriceCurrency.Pln, "49,90 zł")]
+    [InlineData("49,90 zł", PriceCurrency.Pln, "49,90 zł")]
+    [InlineData("1234,5", PriceCurrency.Pln, "1 234,50 zł")]
+    [InlineData("1.234,50", PriceCurrency.Eur, "1 234,50 €")]
+    [InlineData("12 EUR", PriceCurrency.Eur, "12,00 €")]
+    [InlineData("", PriceCurrency.Pln, "")]
+    public void PriceFormatter_FormatsPolishStyle(string raw, PriceCurrency currency, string expected)
+    {
+        Assert.Equal(expected, PriceFormatter.Format(raw, currency));
+    }
+
+    [Fact]
+    public void Build_PrintsPriceLine_WhenEnabled()
+    {
+        var zpl = ZplBuilder.Build([Collar("59,9")], Options(true, PriceCurrency.Eur));
+
+        Assert.Contains("^FD59,90 €\\&^FS", zpl);
+    }
+
+    [Fact]
+    public void Build_OmitsPriceLine_WhenDisabled()
+    {
+        var zpl = ZplBuilder.Build([Collar("59,9")], Options(false));
+
+        Assert.DoesNotContain("59,90", zpl);
+    }
+
+    [Fact]
+    public void Build_WithPrice_BarcodeStillFitsOn40mmLabel()
+    {
+        var zpl = ZplBuilder.Build([Collar("59,90")], Options(true));
+
+        var match = System.Text.RegularExpressions.Regex.Match(zpl, @"\^FO\d+,(?<y>\d+)\^BY(?<m>\d+),2,(?<h>\d+)\^BEN");
+        Assert.True(match.Success);
+        var bottom = int.Parse(match.Groups["y"].Value) + int.Parse(match.Groups["h"].Value) + 9 * int.Parse(match.Groups["m"].Value);
+        Assert.True(bottom <= 320, $"Barcode bottom at {bottom} dots exceeds the 40 mm label.");
+    }
+}
