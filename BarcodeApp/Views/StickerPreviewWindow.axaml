@@ -6,7 +6,7 @@
         x:CompileBindings="False"
         Title="Podgląd etykiety"
         Width="560"
-        Height="400"
+        Height="460"
         MinWidth="500"
         MinHeight="340"
         CanResize="True"
@@ -18,11 +18,13 @@
                 <TextBlock Text="Podgląd etykiety" Classes="section-label" FontSize="16" />
 
                 <Grid Grid.Row="1" Margin="0,4,0,0" HorizontalAlignment="Center">
-                    <Border Classes="preview-paper" Width="460" Height="210" Padding="16">
+                    <Border Classes="preview-paper" Width="460" Height="270" Padding="16">
                         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                            <StackPanel IsVisible="{Binding IncludeProductName}" Spacing="2" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding DescriptionLine1}" Classes="preview-description-main" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-                                <TextBlock Text="{Binding DescriptionLine2}" Classes="preview-description-secondary" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                <TextBlock IsVisible="{Binding IncludeProductName}" Text="{Binding DescriptionLine1}" Classes="preview-description-main" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+                                <TextBlock IsVisible="{Binding IncludeProductName}" Text="{Binding DescriptionLine2}" Classes="preview-description-secondary" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+                                <TextBlock IsVisible="{Binding SkuLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           Text="{Binding SkuLine}" Classes="preview-description-main" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">

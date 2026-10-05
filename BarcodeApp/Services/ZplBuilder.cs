@@ -14,6 +14,15 @@ public static class ZplBuilder
 
         foreach (var row in rows)
         {
+            if (options.Layout == LabelLayout.Multilingual)
+            {
+                var label = BuildMultilingualLabel(row, options);
+                for (var i = 0; i < row.Quantity; i++)
+                    builder.Append(label);
+
+                continue;
+            }
+
             var safeName = EscapeField(row.Name);
             var barcodeFieldData = BarcodeValueRules.BuildZplFieldData(row.Ean, options.BarcodeType);
             var barcodeCommand = BuildBarcodeCommand(options.BarcodeType, options.BarcodeModuleWidthDots, options.BarcodeHeightDots, barcodeFieldData);
@@ -46,6 +55,137 @@ public static class ZplBuilder
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Builds one label in the multilingual layout:
+    /// PL name, EN name, bold SKU and a compact barcode below.
+    /// Empty lines are skipped. Long names are condensed (narrower glyphs),
+    /// then shrunk, and only as a last resort wrapped onto two lines.
+    /// Dimensions are designed for 203 dpi and scaled for other resolutions.
+    /// </summary>
+    private static string BuildMultilingualLabel(ValidProductData row, ZplBuildOptions options)
+    {
+        var dpi = options.PrinterDpi > 0 ? options.PrinterDpi : 203;
+        var scale = dpi / 203.0;
+        int Scaled(double value) => (int)Math.Round(value * scale);
+
+        var labelWidth = options.LabelWidthDots;
+        var margin = Scaled(12);
+        var textWidth = Math.Max(labelWidth - 2 * margin, 40);
+
+        var builder = new StringBuilder();
+        builder.AppendLine("^XA");
+        builder.AppendLine($"^PW{labelWidth}");
+        if (options.LabelHeightDots > 0)
+            builder.AppendLine($"^LL{options.LabelHeightDots}");
+        builder.AppendLine("^LH0,0");
+        // Use UTF-8 code page for Polish diacritics.
+        builder.AppendLine("^CI28");
+
+        var y = Scaled(10);
+
+        if (options.IncludeProductName)
+        {
+            var namePl = string.IsNullOrWhiteSpace(row.NamePl)
+                ? row.Name.Replace("\\&", " ", StringComparison.Ordinal)
+                : row.NamePl;
+
+            AppendTextLine(builder, EscapeField(namePl), ref y, Scaled(30), margin, textWidth, Scaled(6));
+            AppendTextLine(builder, EscapeField(row.NameEn), ref y, Scaled(26), margin, textWidth, Scaled(4));
+        }
+
+        AppendTextLine(builder, EscapeField(row.Sku), ref y, Scaled(34), margin, textWidth, Scaled(6));
+
+        // Never go below ~0.33 mm per bar (EAN nominal size) so retail/warehouse scanners read it reliably.
+        var minimumModule = Math.Max(1, (int)Math.Round(0.33 * dpi / 25.4));
+        var moduleWidth = Math.Max(Math.Clamp(options.BarcodeModuleWidthDots, 1, 10), minimumModule);
+        var interpretationLineHeight = 9 * moduleWidth + Scaled(4);
+        var minimumBarcodeHeight = Scaled(40);
+
+        var barcodeHeight = options.BarcodeHeightDots;
+        if (options.LabelHeightDots > 0)
+        {
+            var available = options.LabelHeightDots - y - interpretationLineHeight - Scaled(6);
+            barcodeHeight = Math.Clamp(available, minimumBarcodeHeight, Math.Max(options.BarcodeHeightDots, minimumBarcodeHeight));
+        }
+
+        var barcodeFieldData = BarcodeValueRules.BuildZplFieldData(row.Ean, options.BarcodeType);
+        var barcodeCommand = BuildBarcodeCommand(options.BarcodeType, moduleWidth, barcodeHeight, barcodeFieldData);
+        var barcodeX = CalculateCenteredBarcodeX(labelWidth, options.BarcodeType, moduleWidth);
+        builder.AppendLine($"^FO{barcodeX},{y}{barcodeCommand}");
+
+        builder.AppendLine("^XZ");
+        return builder.ToString();
+    }
+
+    private static void AppendTextLine(
+        StringBuilder builder,
+        string text,
+        ref int y,
+        int fontHeight,
+        int x,
+        int textWidth,
+        int gapAfter)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var (height, width, lines) = FitText(text, fontHeight, textWidth);
+        // Trailing \& keeps ^FB centering reliable on the last line (same convention as the classic layout).
+        builder.AppendLine($"^FO{x},{y}^A0N,{height},{width}^FB{textWidth},{lines + 1},0,C^FD{text}\\&^FS");
+        y += lines * height + gapAfter;
+    }
+
+    /// <summary>
+    /// Picks font height/width (dots) and line count so the text fits the given width.
+    /// Glyph widths of Zebra font 0 are estimated, so the result is deliberately conservative.
+    /// </summary>
+    public static (int Height, int Width, int Lines) FitText(string text, int fontHeight, int textWidth)
+    {
+        var units = EstimateTextUnits(text);
+        if (units <= 0)
+            return (fontHeight, fontHeight, 1);
+
+        var maxGlyphWidth = (int)Math.Floor(textWidth / units);
+
+        // 1) Fits as is.
+        if (maxGlyphWidth >= fontHeight)
+            return (fontHeight, fontHeight, 1);
+
+        // 2) Condense glyphs horizontally down to 75% of height.
+        var condensedLimit = (int)Math.Ceiling(fontHeight * 0.75);
+        if (maxGlyphWidth >= condensedLimit)
+            return (fontHeight, maxGlyphWidth, 1);
+
+        // 3) Shrink the font down to 80% of the base size (keeping the 75% condensation).
+        var minimumHeight = (int)Math.Round(fontHeight * 0.8);
+        var shrunkHeight = (int)Math.Floor(maxGlyphWidth / 0.75);
+        if (shrunkHeight >= minimumHeight)
+            return (shrunkHeight, maxGlyphWidth, 1);
+
+        // 4) Wrap onto two lines at the minimum size.
+        var twoLineGlyphWidth = (int)Math.Floor(2 * textWidth / units);
+        var width = Math.Clamp(twoLineGlyphWidth, (int)Math.Ceiling(minimumHeight * 0.75), minimumHeight);
+        return (minimumHeight, width, 2);
+    }
+
+    private static double EstimateTextUnits(string text)
+    {
+        var units = 0.0;
+        foreach (var ch in text)
+        {
+            if (ch == ' ')
+                units += 0.30;
+            else if (char.IsUpper(ch) || char.IsDigit(ch))
+                units += 0.62;
+            else if (char.IsLetter(ch))
+                units += 0.52;
+            else
+                units += 0.40;
+        }
+
+        return units;
     }
 
     /// <summary>

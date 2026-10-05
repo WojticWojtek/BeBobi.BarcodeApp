@@ -7,4 +7,11 @@ public sealed class ValidProductData
     public required string Name { get; init; }
 
     public required int Quantity { get; init; }
+
+    /// <summary>Raw Polish product name (used by the multilingual layout).</summary>
+    public string NamePl { get; init; } = string.Empty;
+
+    public string NameEn { get; init; } = string.Empty;
+
+    public string Sku { get; init; } = string.Empty;
 }

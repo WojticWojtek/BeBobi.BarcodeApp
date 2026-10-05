@@ -15,7 +15,13 @@ public sealed class ImportService
 
     private static readonly HashSet<string> NameAliases =
     [
-        "nazwa", "nazwaproduktu", "pelnaunnazwyanazwaproduktu", "product", "productname"
+        "nazwa", "nazwaproduktu", "pelnaunnazwyanazwaproduktu", "product", "productname",
+        "nazwapl", "nazwaproduktupl", "namepl"
+    ];
+
+    private static readonly HashSet<string> NameEnAliases =
+    [
+        "nazwaen", "nazwaang", "nazwaangielska", "nazwaproduktuen", "nameen", "productnameen", "english", "en"
     ];
 
     private static readonly HashSet<string> SkuAliases =
@@ -117,7 +123,7 @@ public sealed class ImportService
 
         if (mapping is null)
         {
-            mapping = new ColumnMapping(0, 1, 2, null, null);
+            mapping = new ColumnMapping(0, 1, 2, null, null, null);
             warnings.Add("Nie udało się wykryć nagłówków. Użyto pierwszych trzech kolumn: EAN, Nazwa, Ilość.");
         }
 
@@ -132,6 +138,7 @@ public sealed class ImportService
             var quantity = GetCell(row, mapping.Value.QuantityIndex);
             var sku = mapping.Value.SkuIndex.HasValue ? GetCell(row, mapping.Value.SkuIndex.Value) : string.Empty;
             var price = mapping.Value.PriceIndex.HasValue ? GetCell(row, mapping.Value.PriceIndex.Value) : string.Empty;
+            var nameEn = mapping.Value.NameEnIndex.HasValue ? GetCell(row, mapping.Value.NameEnIndex.Value) : string.Empty;
 
             if (string.IsNullOrWhiteSpace(ean) && string.IsNullOrWhiteSpace(name) &&
                 string.IsNullOrWhiteSpace(quantity)) continue;
@@ -143,6 +150,7 @@ public sealed class ImportService
                 QuantityText = quantity,
                 Sku = sku,
                 Price = price,
+                NameEn = nameEn,
                 SourceRowNumber = i + 1
             });
         }
@@ -169,6 +177,7 @@ public sealed class ImportService
         int? quantity = null;
         int? sku = null;
         int? price = null;
+        int? nameEn = null;
         for (var i = 0; i < firstRow.Count; i++)
         {
             var normalized = NormalizeHeader(firstRow[i]);
@@ -183,22 +192,24 @@ public sealed class ImportService
                 sku = i;
             else if (PriceAliases.Contains(normalized))
                 price = i;
+            else if (NameEnAliases.Contains(normalized))
+                nameEn = i;
         }
 
         if (ean.HasValue && name.HasValue && quantity.HasValue)
         {
             hasHeader = true;
-            return new ColumnMapping(ean.Value, name.Value, quantity.Value, sku, price);
+            return new ColumnMapping(ean.Value, name.Value, quantity.Value, sku, price, nameEn);
         }
 
         var firstCell = firstRow[0].Trim();
         if (!LooksLikeEan(firstCell) && firstRow.Any(cell => cell.Any(char.IsLetter)))
         {
             hasHeader = true;
-            return new ColumnMapping(ean ?? 0, name ?? 1, quantity ?? 2, sku, price);
+            return new ColumnMapping(ean ?? 0, name ?? 1, quantity ?? 2, sku, price, nameEn);
         }
 
-        return new ColumnMapping(0, 1, 2, null, null);
+        return new ColumnMapping(0, 1, 2, null, null, null);
     }
 
 
@@ -248,5 +259,6 @@ public sealed class ImportService
         int NameIndex,
         int QuantityIndex,
         int? SkuIndex,
-        int? PriceIndex);
+        int? PriceIndex,
+        int? NameEnIndex);
 }

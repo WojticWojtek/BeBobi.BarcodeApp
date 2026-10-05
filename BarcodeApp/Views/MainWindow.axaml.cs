@@ -83,7 +83,8 @@ public partial class MainWindow : Window
 
         var dialog = new StickerPreviewWindow
         {
-            DataContext = new StickerPreviewViewModel(row, includeName, barcodeType)
+            DataContext = new StickerPreviewViewModel(row, includeName, barcodeType,
+                ViewModel?.SelectedLabelLayout ?? Models.LabelLayout.Classic)
         };
 
         await dialog.ShowDialog(this);
@@ -126,7 +127,10 @@ public partial class MainWindow : Window
                 "Wskazówki:\n" +
                 "- Poprawny EAN musi mieć 13 cyfr i prawidłową sumę kontrolną.\n" +
                 "- Ilość musi być dodatnią liczbą całkowitą.\n" +
-                "- Przełącznik nazwy produktu decyduje, czy nazwa pojawi się na etykiecie.",
+                "- Przełącznik nazwy produktu decyduje, czy nazwa pojawi się na etykiecie.\n" +
+                "- Układ \"Dwujęzyczny\" (Ustawienia etykiety) drukuje nazwę PL, EN, SKU i mniejszy kod. " +
+                "Dodaj w pliku kolumnę \"Nazwa EN\" (pusta jest pomijana).\n" +
+                "- Etykieta 60 x 40 mm: kliknij \"Preset 60 x 40 mm\" w ustawieniach.",
             TextWrapping = TextWrapping.Wrap
         };
 

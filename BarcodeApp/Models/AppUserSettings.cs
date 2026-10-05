@@ -4,6 +4,8 @@ public sealed class AppUserSettings
 {
     public bool IncludeProductName { get; set; } = true;
 
+    public LabelLayout LabelLayout { get; set; } = LabelLayout.Classic;
+
     public BarcodeSymbology SelectedBarcodeType { get; set; } = BarcodeSymbology.Ean13;
 
     public string ActivePrinterProfileName { get; set; } = "Domyslny";

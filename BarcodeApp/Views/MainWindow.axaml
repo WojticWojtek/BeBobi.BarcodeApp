@@ -48,14 +48,15 @@
         <Border Grid.Row="2" Classes="table-shell">
             <Grid RowDefinitions="Auto,*">
                 <Border Padding="8" BorderThickness="0,0,0,1" Classes="table-header">
-                    <Grid ColumnDefinitions="160,100,*,90,80,280,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="150,100,*,*,70,60,220,Auto" ColumnSpacing="8">
                         <TextBlock Text="Kod kreskowy" />
                         <TextBlock Grid.Column="1" Text="SKU" />
                         <TextBlock Grid.Column="2" Text="Nazwa produktu" />
-                        <TextBlock Grid.Column="3" Text="Cena" />
-                        <TextBlock Grid.Column="4" Text="Ilość" />
-                        <TextBlock Grid.Column="5" Text="Walidacja" />
-                        <TextBlock Grid.Column="6" Text="Akcje" />
+                        <TextBlock Grid.Column="3" Text="Nazwa EN" />
+                        <TextBlock Grid.Column="4" Text="Cena" />
+                        <TextBlock Grid.Column="5" Text="Ilość" />
+                        <TextBlock Grid.Column="6" Text="Walidacja" />
+                        <TextBlock Grid.Column="7" Text="Akcje" />
                     </Grid>
                 </Border>
 
@@ -65,18 +66,20 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="8" Classes="table-row">
-                                    <Grid ColumnDefinitions="160,100,*,90,80,280,Auto" ColumnSpacing="8">
+                                    <Grid ColumnDefinitions="150,100,*,*,70,60,220,Auto" ColumnSpacing="8">
                                         <TextBox Text="{Binding Ean, Mode=TwoWay}" PlaceholderText="Wartość kodu" />
                                         <TextBox Grid.Column="1" Text="{Binding Sku, Mode=TwoWay}"
                                                  PlaceholderText="SKU" />
                                         <TextBox Grid.Column="2" Text="{Binding Name, Mode=TwoWay}"
                                                  PlaceholderText="Nazwa produktu" />
-                                        <TextBox Grid.Column="3" Text="{Binding Price, Mode=TwoWay}"
+                                        <TextBox Grid.Column="3" Text="{Binding NameEn, Mode=TwoWay}"
+                                                 PlaceholderText="Nazwa EN" />
+                                        <TextBox Grid.Column="4" Text="{Binding Price, Mode=TwoWay}"
                                                  PlaceholderText="Cena" />
-                                        <TextBox Grid.Column="4" Text="{Binding QuantityText, Mode=TwoWay}" />
-                                        <TextBlock Grid.Column="5" Text="{Binding ValidationMessage}"
+                                        <TextBox Grid.Column="5" Text="{Binding QuantityText, Mode=TwoWay}" />
+                                        <TextBlock Grid.Column="6" Text="{Binding ValidationMessage}"
                                                    VerticalAlignment="Center" TextWrapping="Wrap" />
-                                        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6">
+                                        <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6">
                                             <Button Content="Podgląd" Click="PreviewRowButton_OnClick" Tag="{Binding .}" />
                                             <Button Content="Usuń" Click="RemoveRowButton_OnClick" Tag="{Binding .}" />
                                         </StackPanel>
@@ -101,6 +104,17 @@
                         <TextBlock Text="Rozmiar etykiety" Classes="section-label" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Content="Przywróć domyślne" Command="{Binding ResetSettingsCommand}" />
                     </Grid>
+
+                <Grid ColumnDefinitions="Auto,300,Auto,*" ColumnSpacing="10">
+                    <TextBlock VerticalAlignment="Center" Text="Układ etykiety:" Classes="section-label" />
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding LabelLayoutOptions}"
+                              SelectedIndex="{Binding SelectedLabelLayoutIndex, Mode=TwoWay}" />
+                    <Button Grid.Column="2" Content="Preset 60 x 40 mm" Command="{Binding Apply60x40PresetCommand}"
+                            ToolTip.Tip="Ustawia etykietę 60 x 40 mm i układ wielojęzyczny dla wybranego DPI." />
+                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="10,0,0,0"
+                               Text="{Binding LabelLayoutHint}" Opacity="0.65" TextWrapping="Wrap" />
+                </Grid>
 
                 <Grid ColumnDefinitions="Auto,220,Auto,Auto,Auto,*" ColumnSpacing="8">
                     <TextBlock VerticalAlignment="Center" Text="Profil drukarki:" Classes="section-label" />

@@ -12,5 +12,7 @@ public sealed class ProductInputRow
 
     public string Price { get; init; } = string.Empty;
 
+    public string NameEn { get; init; } = string.Empty;
+
     public required int SourceRowNumber { get; init; }
 }

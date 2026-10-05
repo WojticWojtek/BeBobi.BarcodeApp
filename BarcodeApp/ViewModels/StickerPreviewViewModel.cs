@@ -4,14 +4,30 @@ namespace Qivisoft.BarcodeApp.ViewModels;
 
 public sealed class StickerPreviewViewModel : ViewModelBase
 {
-    public StickerPreviewViewModel(ProductRowViewModel row, bool includeProductName, BarcodeSymbology barcodeType)
+    public StickerPreviewViewModel(
+        ProductRowViewModel row,
+        bool includeProductName,
+        BarcodeSymbology barcodeType,
+        LabelLayout layout = LabelLayout.Classic)
     {
         ArgumentNullException.ThrowIfNull(row);
 
         IncludeProductName = includeProductName;
         BarcodeType = barcodeType;
-        DescriptionLine1 = includeProductName ? row.PreviewDescriptionLine1 : string.Empty;
-        DescriptionLine2 = includeProductName ? row.PreviewDescriptionLine2 : string.Empty;
+        Layout = layout;
+
+        if (layout == LabelLayout.Multilingual)
+        {
+            DescriptionLine1 = includeProductName ? row.Name.Trim() : string.Empty;
+            DescriptionLine2 = includeProductName ? row.NameEn.Trim() : string.Empty;
+            SkuLine = row.Sku.Trim();
+        }
+        else
+        {
+            DescriptionLine1 = includeProductName ? row.PreviewDescriptionLine1 : string.Empty;
+            DescriptionLine2 = includeProductName ? row.PreviewDescriptionLine2 : string.Empty;
+        }
+
         BarcodeBars = row.PreviewBarcodeBars;
         BarcodeText = row.PreviewBarcodeText;
         ValidationMessage = row.ValidationMessage;
@@ -25,6 +41,11 @@ public sealed class StickerPreviewViewModel : ViewModelBase
     public string DescriptionLine1 { get; }
 
     public string DescriptionLine2 { get; }
+
+    public LabelLayout Layout { get; }
+
+    /// <summary>Bold SKU line (multilingual layout only).</summary>
+    public string SkuLine { get; } = string.Empty;
 
     public string BarcodeBars { get; }
 

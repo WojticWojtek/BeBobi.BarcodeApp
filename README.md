@@ -31,6 +31,11 @@ QiviLabel is a cross-platform desktop app for importing product data (CSV/XLS/XL
   - Code 128
 - ZPL export with configurable profile settings (DPI, width/height, barcode type)
 - Persisted printer/profile settings
+- Label layouts:
+  - **Classic**: up to 2 description lines above a large barcode
+  - **Multilingual**: PL / EN product names, bold SKU and a compact barcode
+    (optional `Nazwa EN` import column, see `demodata/07_multilingual_60x40.csv`);
+    long names are condensed automatically; "Preset 60 x 40 mm" sets the label size
 
 ## Local Development
 

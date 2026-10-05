@@ -81,6 +81,16 @@ public sealed class ProductRowViewModel : ViewModelBase
         }
     } = string.Empty;
 
+    public string NameEn
+    {
+        get;
+        set
+        {
+            if (SetProperty(ref field, value))
+                RowChanged?.Invoke(this, EventArgs.Empty);
+        }
+    } = string.Empty;
+
     public string PreviewDescriptionLine1 => BuildPreviewLines(Sku, Name, Price).line1;
 
     public string PreviewDescriptionLine2 => BuildPreviewLines(Sku, Name, Price).line2;
@@ -119,6 +129,7 @@ public sealed class ProductRowViewModel : ViewModelBase
             QuantityText = input.QuantityText,
             Sku = input.Sku,
             Price = input.Price,
+            NameEn = input.NameEn,
             BarcodeType = BarcodeSymbology.Ean13
         };
     }
@@ -137,7 +148,10 @@ public sealed class ProductRowViewModel : ViewModelBase
         {
             Ean = Ean.Trim(),
             Name = BuildDescription(Sku, Name, Price),
-            Quantity = int.Parse(QuantityText.Trim())
+            Quantity = int.Parse(QuantityText.Trim()),
+            NamePl = Name.Trim(),
+            NameEn = NameEn.Trim(),
+            Sku = Sku.Trim()
         };
 
         return true;

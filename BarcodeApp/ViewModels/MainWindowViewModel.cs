@@ -44,6 +44,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         RemoveProfileCommand = new RelayCommand(RemoveCurrentProfile, () => PrinterProfileNames.Count > 1);
         Apply203DpiPresetCommand = new RelayCommand(() => ApplyDpiPreset(203));
         Apply300DpiPresetCommand = new RelayCommand(() => ApplyDpiPreset(300));
+        Apply60x40PresetCommand = new RelayCommand(Apply60x40Preset);
 
         ApplySettings(_settingsStore.Load());
     }
@@ -59,6 +60,42 @@ public sealed class MainWindowViewModel : ViewModelBase
         BarcodeSymbology.UpcA,
         BarcodeSymbology.Code128
     ];
+
+    public IReadOnlyList<string> LabelLayoutOptions { get; } =
+    [
+        "Klasyczny (nazwa + duży kod)",
+        "Dwujęzyczny (PL / EN + SKU)"
+    ];
+
+    public LabelLayout SelectedLabelLayout
+    {
+        get;
+        set
+        {
+            if (!SetProperty(ref field, value))
+                return;
+
+            OnPropertyChanged(nameof(SelectedLabelLayoutIndex));
+            OnPropertyChanged(nameof(LabelLayoutHint));
+            SaveSettings();
+        }
+    } = LabelLayout.Classic;
+
+    /// <summary>Index-based binding for the layout ComboBox (0 = classic, 1 = multilingual).</summary>
+    public int SelectedLabelLayoutIndex
+    {
+        get => (int)SelectedLabelLayout;
+        set
+        {
+            if (value is >= 0 and <= 1)
+                SelectedLabelLayout = (LabelLayout)value;
+        }
+    }
+
+    public string LabelLayoutHint =>
+        SelectedLabelLayout == LabelLayout.Multilingual
+            ? "Nazwa PL i EN (kolumna \"Nazwa EN\"), pogrubione SKU i mniejszy kod. Ustaw wys. etykiety, np. 320 dots = 40 mm."
+            : "Do 2 linii opisu (nazwa, SKU, cena) nad dużym kodem kreskowym.";
 
     public ProductRowViewModel? SelectedRow
     {
@@ -274,6 +311,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public IRelayCommand Apply300DpiPresetCommand { get; }
 
+    public IRelayCommand Apply60x40PresetCommand { get; }
+
     public void ImportFromPath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -472,6 +511,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         try
         {
             IncludeProductName = settings.IncludeProductName;
+            SelectedLabelLayout = Enum.IsDefined(settings.LabelLayout) ? settings.LabelLayout : LabelLayout.Classic;
             SelectedBarcodeType = settings.SelectedBarcodeType;
 
             _printerProfiles.Clear();
@@ -525,6 +565,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _settingsStore.Save(new AppUserSettings
         {
             IncludeProductName = IncludeProductName ?? true,
+            LabelLayout = SelectedLabelLayout,
             SelectedBarcodeType = SelectedBarcodeType,
             ActivePrinterProfileName = SelectedPrinterProfileName,
             PrinterProfiles = _printerProfiles.Select(CloneProfile).ToList(),
@@ -593,6 +634,24 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         SaveSettings();
         StatusMessage = $"Zastosowano preset {dpi} dpi dla profilu '{SelectedPrinterProfileName}'.";
+    }
+
+    /// <summary>
+    /// Label 60 x 40 mm with the multilingual layout for the current printer resolution.
+    /// </summary>
+    private void Apply60x40Preset()
+    {
+        var dpi = PrinterDpi is 203 or 300 ? PrinterDpi : DefaultPrinterDpi;
+        var dotsPerMm = dpi / 25.4;
+
+        PrinterDpi = dpi;
+        LabelWidthDotsText = ((int)Math.Round(60 * dotsPerMm)).ToString();
+        LabelHeightDotsText = ((int)Math.Round(40 * dotsPerMm)).ToString();
+        BarcodeHeightDotsText = ((int)Math.Round(14 * dotsPerMm)).ToString();
+        SelectedLabelLayout = LabelLayout.Multilingual;
+
+        SaveSettings();
+        StatusMessage = $"Zastosowano preset 60 x 40 mm (układ dwujęzyczny, {dpi} dpi) dla profilu '{SelectedPrinterProfileName}'.";
     }
 
     private void RefreshProfileNames()
@@ -695,7 +754,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             IncludeProductName = IncludeProductName ?? true,
             LabelWidthDots = options.LabelWidthDots,
             BarcodeHeightDots = options.BarcodeHeightDots,
-            LabelHeightDots = options.LabelHeightDots
+            LabelHeightDots = options.LabelHeightDots,
+            Layout = SelectedLabelLayout,
+            PrinterDpi = PrinterDpi
         });
 
         validProductsCount = validData.Count;

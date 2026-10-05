@@ -18,4 +18,9 @@ public sealed class ZplBuildOptions
     /// When > 0 emits ^LL to fix label height. 0 = auto-size (ZPL default).
     /// </summary>
     public int LabelHeightDots { get; init; } = 0;
+
+    public LabelLayout Layout { get; init; } = LabelLayout.Classic;
+
+    /// <summary>Printer resolution, used to scale the multilingual layout.</summary>
+    public int PrinterDpi { get; init; } = 203;
 }
